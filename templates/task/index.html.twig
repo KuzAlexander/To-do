@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}To do{% endblock %}
+
+{% block button %}
+<div>
+    <a href="{{ path('new_task') }}" class="btn btn-outline-success">Добавить</a>
+    {% if app.request.attributes.get('_route') == 'made_task' %}
+        <a href="{{ path('delete_completed_task') }}" class="btn btn-outline-danger">Удалить все</a>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block body %}
+    {% if tasks is empty %}
+        <h2>Задач нет</h2>
+    {% endif %}
+
+    <div class="todo-list">
+        {% for task in tasks %}
+            <div class="todo-item">
+                {% if task.done == 1 %}
+                    <a href="{{ path('take_off_task', {id:task.id}) }}" class="todo-checkbox__fill"></a>
+                    <span class="todo-text todo-text__trough">{{ task.name }}</span>
+                {% else %}
+                    <a href="{{ path('completed_task', {id:task.id}) }}" class="todo-checkbox"></a>
+                    <span class="todo-text">{{ task.name }}</span>
+                {% endif %}
+                <a class="btn-close todo-delete" href="{{ path('delete_task', {id: task.id}) }}"></a>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}
