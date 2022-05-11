@@ -50,7 +50,7 @@ class TaskRepository extends ServiceEntityRepository
     /**
     * @return Task[] Returns an array of Task objects
     */
-    public function activeTask(): array
+    public function getActiveTasks(): array
     {
         $entityManager = $this->getEntityManager();
 
@@ -62,6 +62,16 @@ class TaskRepository extends ServiceEntityRepository
         );
 
         return $query->getResult();
+    }
+
+    /**
+    * @return Task[] Returns an array of Task objects
+    */
+    public function getDoneTasks(): array
+    {
+        return $this->findBy([
+            'done' => 1,
+        ]);
     }
 
 //    /**

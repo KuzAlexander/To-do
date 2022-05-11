@@ -7,7 +7,7 @@ composer install
 
 ### Настройка БД
 ```
-.env cp .env.local
+cp .env .env.local
 ```
 
 ### Создать БД

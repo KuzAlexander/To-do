@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Form\TaskType;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -13,18 +14,25 @@ use App\Repository\TaskRepository;
 
 class TaskController extends AbstractController
 {
+    private $taskRepository;
+    private $entityManager;
+
+    public function __construct(TaskRepository $taskRepository, EntityManagerInterface $entityManager)
+    {
+        $this->taskRepository = $taskRepository;
+        $this->entityManager = $entityManager;
+    }
+
     /**
      * @Route("/task/add", name="add_task")
      */
-    public function addTask(ManagerRegistry $doctrine): Response
+    public function addTask(): Response
     {
-        $entityManager = $doctrine->getManager();
-
         $task = new Task();
         $task->setName('buy a keyboard');
 
-        $entityManager->persist($task);
-        $entityManager->flush();
+        $this->entityManager->persist($task);
+        $this->entityManager->flush();
 
         return $this->redirectToRoute('show_all_task');
     }
@@ -32,7 +40,7 @@ class TaskController extends AbstractController
     /**
      * @Route("/task/new", name="new_task")
      */
-    public function new(Request $request, ManagerRegistry $doctrine): Response
+    public function new(Request $request): Response
     {
         $task = new Task();
 
@@ -41,9 +49,8 @@ class TaskController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
 
-            $entityManager = $doctrine->getManager();
-            $entityManager->persist($task);
-            $entityManager->flush();
+            $this->entityManager->persist($task);
+            $this->entityManager->flush();
 
             return $this->redirectToRoute('show_all_task');
         }
@@ -57,9 +64,9 @@ class TaskController extends AbstractController
     /**
      * @Route("/task/show/{id}", requirements={"id"="\d+"})
      */
-    public function show(ManagerRegistry $doctrine, int $id): Response
+    public function show(int $id): Response
     {
-        $product = $doctrine->getRepository(Task::class)->find($id);
+        $product = $this->taskRepository->find($id);
 
         if (!$product) {
             throw $this->createNotFoundException(
@@ -73,10 +80,9 @@ class TaskController extends AbstractController
     /**
      * @Route("/task", name="show_all_task")
      */
-    public function showAllTask(ManagerRegistry $doctrine): Response
+    public function showAllTask(): Response
     {
-        $repository = $doctrine->getRepository(Task::class);
-        $tasks = $repository->findAll();
+        $tasks = $this->taskRepository->findAll();
 
         return $this->render('task/index.html.twig', [
             'project_title' => 'Все задачи',
@@ -87,9 +93,9 @@ class TaskController extends AbstractController
     /**
      * @Route("/task/active", name="active_task")
      */
-    public function showActiveTask(ManagerRegistry $doctrine): Response
+    public function showActiveTask(): Response
     {
-        $tasks = $doctrine->getRepository(Task::class)->activeTask();
+        $tasks = $this->taskRepository->getActiveTasks();
 
         return $this->render('task/index.html.twig', [
             'project_title' => 'Астивные задачи',
@@ -98,14 +104,11 @@ class TaskController extends AbstractController
     }
 
     /**
-     * @Route("/task/made", name="made_task")
+     * @Route("/task/done", name="made_task")
      */
-    public function showMadeTask(ManagerRegistry $doctrine): Response
+    public function showDoneTask(): Response
     {
-        $repository = $doctrine->getRepository(Task::class);
-        $tasks = $repository->findBy([
-            'done' => 1,
-        ]);
+        $tasks = $this->taskRepository->getDoneTasks();
 
         return $this->render('task/index.html.twig', [
             'project_title' => 'Выполненные задачи',
@@ -116,10 +119,9 @@ class TaskController extends AbstractController
     /**
      * @Route("/task/edit/{id}")
      */
-    public function update(ManagerRegistry $doctrine, int $id): Response
+    public function update(int $id): Response
     {
-        $entityManager = $doctrine->getManager();
-        $task = $entityManager->getRepository(Task::class)->find($id);
+        $task = $this->taskRepository->find($id);
 
         if (!$task) {
             throw $this->createNotFoundException(
@@ -128,7 +130,7 @@ class TaskController extends AbstractController
         }
 
         $task->setName('New product name!');
-        $entityManager->flush();
+        $this->entityManager->flush();
 
         return $this->redirectToRoute('show_all_task');
     }
@@ -136,38 +138,34 @@ class TaskController extends AbstractController
     /**
      * @Route("/task/delete/{id}", name="delete_task", requirements={"id"="\d+"})
      */
-    public function deleteTask(ManagerRegistry $doctrine, int $id): Response
+    public function deleteTask(int $id): Response
     {
-        $entityManager = $doctrine->getManager();
-        $task = $entityManager->getRepository(Task::class)->find($id);
-        $entityManager->remove($task);
-        $entityManager->flush();
+
+        $task = $this->taskRepository->find($id);
+        $this->entityManager->remove($task);
+        $this->entityManager->flush();
         return $this->redirectToRoute('show_all_task');
     }
 
     /**
      * @Route("/task/delete/completed", name="delete_completed_task")
      */
-    public function deleteCompletedTask(ManagerRegistry $doctrine): Response
+    public function deleteCompletedTask(): Response
     {
-        $entityManager = $doctrine->getManager();
-        $tasks = $entityManager->getRepository(Task::class)->findBy([
-            'done' => 1,
-        ]);
+        $tasks = $this->taskRepository->getDoneTasks();
         foreach ($tasks as $value) {
-            $entityManager->remove($value);
+            $this->entityManager->remove($value);
         }
-        $entityManager->flush();
+        $this->entityManager->flush();
         return $this->redirectToRoute('show_all_task');
     }
 
     /**
      * @Route("/task/completed/{id}", name="completed_task")
      */
-    public function comletedTask(ManagerRegistry $doctrine, $id): Response
+    public function comletedTask($id): Response
     {
-        $entityManager = $doctrine->getManager();
-        $task = $entityManager->getRepository(Task::class)->find($id);
+        $task = $this->taskRepository->find($id);
 
         if (!$task) {
             throw $this->createNotFoundException(
@@ -176,18 +174,17 @@ class TaskController extends AbstractController
         }
 
         $task->setDone(true);
-        $entityManager->flush();
+        $this->entityManager->flush();
 
         return $this->redirectToRoute('show_all_task');
     }
 
     /**
-     * @Route("/task/take_off/{id}", name="take_off_task")
+     * @Route("/task/take-off/{id}", name="take_off_task")
      */
-    public function takeOffTask(ManagerRegistry $doctrine, $id): Response
+    public function takeOffTask($id): Response
     {
-        $entityManager = $doctrine->getManager();
-        $task = $entityManager->getRepository(Task::class)->find($id);
+        $task = $this->taskRepository->find($id);
 
         if (!$task) {
             throw $this->createNotFoundException(
@@ -196,7 +193,7 @@ class TaskController extends AbstractController
         }
 
         $task->setDone(false);
-        $entityManager->flush();
+        $this->entityManager->flush();
 
         return $this->redirectToRoute('show_all_task');
     }
