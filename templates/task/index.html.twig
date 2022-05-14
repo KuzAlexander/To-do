@@ -26,7 +26,7 @@
                     <a href="{{ path('completed_task', {id:task.id}) }}" class="todo-checkbox"></a>
                     <span class="todo-text">{{ task.name }}</span>
                 {% endif %}
-                <a class="btn-close todo-delete" href="{{ path('delete_task', {id: task.id}) }}"></a>
+                <a href="{{ path('delete_task', {id: task.id}) }}"><i class="bi bi-x-square"></i></a>
             </div>
         {% endfor %}
     </div>
