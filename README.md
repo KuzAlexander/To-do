@@ -1,6 +1,6 @@
 # to_do
 
-## Установка пакетов
+### Установка пакетов
 ```
 composer install
 ```
@@ -17,7 +17,14 @@ php bin/console doctrine:database:create
 
 ### Установка миграций
 ```
-php bin/console make:migration
 php bin/console doctrine:migrations:migrate
 ```
 
+### Запуск проекта
+```
+symfony server:start
+```
+### To_do
+```
+http://localhost:8000/task
+```
