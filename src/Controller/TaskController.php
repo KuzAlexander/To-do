@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Form\TaskType;
+use App\Service\TaskManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,24 +17,21 @@ class TaskController extends AbstractController
 {
     private $taskRepository;
     private $entityManager;
+    private $taskManager;
 
-    public function __construct(TaskRepository $taskRepository, EntityManagerInterface $entityManager)
+    public function __construct(TaskManager $taskManager)
     {
-        $this->taskRepository = $taskRepository;
-        $this->entityManager = $entityManager;
+        $this->taskRepository = $taskManager->taskRepository;
+        $this->entityManager = $taskManager->entityManager;
+        $this->taskManager = $taskManager;
     }
 
     /**
-     * @Route("/task/add", name="add_task")
+     * @Route("/task/add/{nameTask}", name="add_task")
      */
-    public function addTask(): Response
+    public function addTask(string $nameTask): Response
     {
-        $task = new Task();
-        $task->setName('buy a keyboard');
-
-        $this->entityManager->persist($task);
-        $this->entityManager->flush();
-
+        $this->taskManager->addTask($nameTask);
         return $this->redirectToRoute('show_all_task');
     }
 
@@ -152,11 +150,7 @@ class TaskController extends AbstractController
      */
     public function deleteCompletedTask(): Response
     {
-        $tasks = $this->taskRepository->getDoneTasks();
-        foreach ($tasks as $value) {
-            $this->entityManager->remove($value);
-        }
-        $this->entityManager->flush();
+        $this->taskManager->deleteDoneTasks();
         return $this->redirectToRoute('show_all_task');
     }
 
